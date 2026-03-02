@@ -1,88 +1,79 @@
-let siteSettings = JSON.parse(localStorage.getItem("siteSettings")) || { title:"Cafe Adda" };
-let categories = JSON.parse(localStorage.getItem("categories")) || [];
-let menu = JSON.parse(localStorage.getItem("menu")) || [];
-let combos = JSON.parse(localStorage.getItem("combos")) || [];
-let cart = {};
+const branchId="main";
+let cart={};
+let minimumOrder = 100;
+let deliveryCharge = 20;
 
-document.getElementById("siteTitleDisplay").innerText = siteSettings.title;
+db.collection("categories")
+  .where("branchId","==",branchId)
+  .onSnapshot(catSnap=>{
+    menuContainer.innerHTML="";
+    catSnap.forEach(catDoc=>{
+      const cat=catDoc.data();
+      menuContainer.innerHTML+=`<h2>${cat.name}</h2>`;
 
-function renderCombos(){
-  comboContainer.innerHTML="";
-  combos.filter(c=>c.active).forEach(combo=>{
-    comboContainer.innerHTML+=`
-      <div class="card" style="border:1px solid gold;">
-        <h3>${combo.name}</h3>
-        <p>₹${combo.price}</p>
-        <button onclick="addComboToCart(${combo.id})">Add Combo</button>
-      </div>
-    `;
-  });
-}
-
-function renderMenu(){
-  menuContainer.innerHTML="";
-  categories.forEach(cat=>{
-    menuContainer.innerHTML+=`<h2>${cat.name}</h2>`;
-    menu.filter(i=>i.categoryId===cat.id && i.active)
-        .forEach(item=>{
-          menuContainer.innerHTML+=`
-            <div class="card">
-              <h3>${item.name}</h3>
-              <p>₹${item.price}</p>
-              ${item.bestseller?"⭐ Bestseller":""}
-              <button onclick="addToCart(${item.id})">Add to Cart</button>
-            </div>
-          `;
+      db.collection("menu")
+        .where("categoryId","==",catDoc.id)
+        .where("active","==",true)
+        .onSnapshot(menuSnap=>{
+          menuSnap.forEach(doc=>{
+            const item=doc.data();
+            menuContainer.innerHTML+=`
+              <div>
+                ${item.name} - ₹${item.price}
+                <button onclick="addToCart('${doc.id}','${item.name}',${item.price})">
+                  Add
+                </button>
+              </div>
+            `;
+          });
         });
+    });
   });
-}
 
-function addToCart(id){
-  const item = menu.find(i=>i.id===id);
+db.collection("combos")
+  .where("branchId","==",branchId)
+  .where("active","==",true)
+  .onSnapshot(snapshot=>{
+    comboContainer.innerHTML="";
+    snapshot.forEach(doc=>{
+      const combo=doc.data();
+      comboContainer.innerHTML+=`
+        <div>
+          ${combo.name} - ₹${combo.price}
+          <button onclick="addToCart('combo_${doc.id}','${combo.name}',${combo.price})">
+            Add Combo
+          </button>
+        </div>
+      `;
+    });
+  });
+
+function addToCart(id,name,price){
   if(cart[id]) cart[id].qty++;
-  else cart[id]={name:item.name,price:item.price,qty:1};
-  updateCart();
-  toggleCart();
-}
-
-function addComboToCart(id){
-  const combo = combos.find(c=>c.id===id);
-  cart["combo_"+id]={name:combo.name+" (Combo)",price:combo.price,qty:1};
-  updateCart();
-  toggleCart();
-}
-
-function changeQty(id,change){
-  if(!cart[id]) return;
-  cart[id].qty+=change;
-  if(cart[id].qty<=0) delete cart[id];
+  else cart[id]={name,price,qty:1};
   updateCart();
 }
 
 function updateCart(){
   cartItems.innerHTML="";
-  let total=0,count=0;
+  let subtotal=0;
+
   for(let id in cart){
     const item=cart[id];
-    total+=item.price*item.qty;
-    count+=item.qty;
+    subtotal+=item.price*item.qty;
     cartItems.innerHTML+=`
-      <div class="card">
-        ${item.name}
-        <br>
-        ₹${item.price} × ${item.qty}
-        <br>
-        <button onclick="changeQty('${id}',-1)">−</button>
-        <button onclick="changeQty('${id}',1)">+</button>
+      <div>
+        ${item.name} x${item.qty}
       </div>
     `;
   }
-  cartTotal.innerText=total;
-  cartCount.innerText=count;
-}
 
-function toggleCart(){
-  cartPanel.classList.toggle("active");
+  let total=subtotal;
+  if(subtotal < minimumOrder){
+    total += deliveryCharge;
+  }
+
+  cartTotal.innerText=total;
 }
 
 function sendWhatsAppOrder(){
@@ -93,22 +84,40 @@ function sendWhatsAppOrder(){
   if(Object.keys(cart).length===0) return alert("Cart empty");
   if(!name||!phone||!address) return alert("Fill delivery details");
 
-  let message=`Hello ${siteSettings.title}!%0A%0A`;
-  message+=`Name: ${name}%0APhone: ${phone}%0AAddress: ${address}%0A%0AOrder:%0A`;
-
-  let total=0;
+  let subtotal=0;
   for(let id in cart){
-    const item=cart[id];
-    total+=item.price*item.qty;
-    message+=`${item.name} x${item.qty} - ₹${item.price*item.qty}%0A`;
+    subtotal+=cart[id].price*cart[id].qty;
   }
-  message+=`%0ATotal: ₹${total}`;
 
-  window.open(`https://wa.me/918669181007?text=${message}`);
-  cart={};
-  updateCart();
-  toggleCart();
+  let total=subtotal;
+  if(subtotal < minimumOrder){
+    total += deliveryCharge;
+  }
+
+  db.collection("orders").add({
+    branchId: branchId,
+    customerName: name,
+    customerPhone: phone,
+    customerAddress: address,
+    items: Object.values(cart),
+    subtotal: subtotal,
+    deliveryCharge: subtotal < minimumOrder ? deliveryCharge : 0,
+    total: total,
+    status: "Pending",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(docRef=>{
+      let message=`Order ID: ${docRef.id}%0A`;
+      message+=`Name: ${name}%0A`;
+      message+=`Address: ${address}%0A%0A`;
+
+      for(let id in cart){
+        message+=`${cart[id].name} x${cart[id].qty}%0A`;
+      }
+
+      message+=`%0ATotal: ₹${total}`;
+
+      window.open(`https://wa.me/918669181007?text=${message}`);
+      cart={};
+      updateCart();
+  });
 }
-
-renderCombos();
-renderMenu();
