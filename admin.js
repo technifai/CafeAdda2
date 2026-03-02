@@ -1,207 +1,156 @@
-let siteSettings = JSON.parse(localStorage.getItem("siteSettings")) || {
-  title: "Cafe Adda"
-};
+let currentBranch = null;
 
-let categories = JSON.parse(localStorage.getItem("categories")) || [];
-let menu = JSON.parse(localStorage.getItem("menu")) || [];
-let combos = JSON.parse(localStorage.getItem("combos")) || [];
+function login(){
+  auth.signInWithEmailAndPassword(email.value,password.value)
+    .then(async (cred)=>{
 
-let editingId = null;
+      const userDoc = await db.collection("users")
+        .doc(cred.user.uid).get();
 
-function saveAll(){
-  localStorage.setItem("siteSettings", JSON.stringify(siteSettings));
-  localStorage.setItem("categories", JSON.stringify(categories));
-  localStorage.setItem("menu", JSON.stringify(menu));
-  localStorage.setItem("combos", JSON.stringify(combos));
-}
+      if(!userDoc.exists || userDoc.data().role !== "admin"){
+        alert("Not authorized");
+        return;
+      }
 
-/* WEBSITE TITLE */
+      currentBranch = userDoc.data().branchId;
 
-function updateTitle(){
-  siteSettings.title = siteTitle.value;
-  saveAll();
-  alert("Title Updated");
+      loginBox.style.display="none";
+      adminPanel.style.display="block";
+
+      loadCategories();
+      loadMenu();
+      loadCombos();
+      loadOrders();
+    })
+    .catch(error=>alert(error.message));
 }
 
 /* CATEGORY */
 
 function addCategory(){
-  if(!categoryName.value) return;
-
-  categories.push({
-    id: Date.now(),
-    name: categoryName.value
+  db.collection("categories").add({
+    branchId: currentBranch,
+    name: categoryName.value,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
-
   categoryName.value="";
-  saveAll();
-  renderCategories();
 }
 
-function renderCategories(){
-  categoryList.innerHTML="";
-  categorySelect.innerHTML="";
-
-  categories.forEach(cat=>{
-    categoryList.innerHTML+=`
-      <div>${cat.name}</div>
-    `;
-    categorySelect.innerHTML+=`
-      <option value="${cat.id}">${cat.name}</option>
-    `;
-  });
+function loadCategories(){
+  db.collection("categories")
+    .where("branchId","==",currentBranch)
+    .onSnapshot(snapshot=>{
+      categoryList.innerHTML="";
+      categorySelect.innerHTML="";
+      snapshot.forEach(doc=>{
+        const cat=doc.data();
+        categoryList.innerHTML+=`<div>${cat.name}</div>`;
+        categorySelect.innerHTML+=`<option value="${doc.id}">${cat.name}</option>`;
+      });
+    });
 }
 
 /* MENU */
 
-function saveItem(){
-  if(!itemName.value || !itemPrice.value) return;
-
-  if(editingId){
-    const item = menu.find(i=>i.id===editingId);
-    item.name = itemName.value;
-    item.price = Number(itemPrice.value);
-    item.categoryId = Number(categorySelect.value);
-    item.bestseller = itemBest.checked;
-    item.active = itemActive.checked;
-    editingId = null;
-  } else {
-    menu.push({
-      id: Date.now(),
-      name: itemName.value,
-      price: Number(itemPrice.value),
-      categoryId: Number(categorySelect.value),
-      bestseller: itemBest.checked,
-      active: itemActive.checked
-    });
-  }
+function addItem(){
+  db.collection("menu").add({
+    branchId: currentBranch,
+    categoryId: categorySelect.value,
+    name: itemName.value,
+    price: Number(itemPrice.value),
+    bestseller: itemBest.checked,
+    active: itemActive.checked,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
 
   itemName.value="";
   itemPrice.value="";
   itemBest.checked=false;
   itemActive.checked=true;
-
-  saveAll();
-  renderMenu();
-  renderComboItemSelection();
 }
 
-function renderMenu(){
-  menuList.innerHTML="";
-
-  menu.forEach(item=>{
-    const category = categories.find(c=>c.id===item.categoryId);
-
-    menuList.innerHTML+=`
-      <div class="card ${!item.active ? 'hidden' : ''}">
-        <b>${item.name}</b> - ₹${item.price}
-        (${category ? category.name : ""})
-        ${item.bestseller ? "⭐" : ""}
-        <br>
-        <button onclick="editItem(${item.id})">Edit</button>
-        <button onclick="deleteItem(${item.id})">Delete</button>
-      </div>
-    `;
-  });
+function loadMenu(){
+  db.collection("menu")
+    .where("branchId","==",currentBranch)
+    .onSnapshot(snapshot=>{
+      menuList.innerHTML="";
+      comboItemsSelection.innerHTML="";
+      snapshot.forEach(doc=>{
+        const item=doc.data();
+        menuList.innerHTML+=`
+          <div>
+            ${item.name} - ₹${item.price}
+          </div>
+        `;
+        comboItemsSelection.innerHTML+=`
+          <label>
+            <input type="checkbox" value="${doc.id}">
+            ${item.name}
+          </label><br>
+        `;
+      });
+    });
 }
 
-function editItem(id){
-  const item = menu.find(i=>i.id===id);
-  editingId = id;
-  itemName.value = item.name;
-  itemPrice.value = item.price;
-  categorySelect.value = item.categoryId;
-  itemBest.checked = item.bestseller;
-  itemActive.checked = item.active;
-}
-
-function deleteItem(id){
-  menu = menu.filter(item=>item.id!==id);
-  saveAll();
-  renderMenu();
-  renderComboItemSelection();
-}
-
-/* COMBO SYSTEM */
-
-function renderComboItemSelection(){
-  comboItemsSelection.innerHTML="";
-
-  menu.forEach(item=>{
-    comboItemsSelection.innerHTML+=`
-      <label>
-        <input type="checkbox" value="${item.id}">
-        ${item.name} (₹${item.price})
-      </label><br>
-    `;
-  });
-}
+/* COMBO */
 
 function addCombo(){
+  const selected=[...comboItemsSelection.querySelectorAll("input:checked")]
+                  .map(cb=>cb.value);
 
-  const selected = [...comboItemsSelection.querySelectorAll("input:checked")]
-                   .map(cb=>Number(cb.value));
-
-  if(!comboName.value || !comboPrice.value || selected.length===0){
-    alert("Fill all combo details");
-    return;
-  }
-
-  combos.push({
-    id: Date.now(),
+  db.collection("combos").add({
+    branchId: currentBranch,
     name: comboName.value,
     price: Number(comboPrice.value),
     items: selected,
-    active: comboActive.checked
+    active: comboActive.checked,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
   comboName.value="";
   comboPrice.value="";
-  comboActive.checked=true;
-
-  saveAll();
-  renderCombos();
 }
 
-function renderCombos(){
-  comboList.innerHTML="";
-
-  combos.forEach(combo=>{
-    comboList.innerHTML+=`
-      <div class="card ${!combo.active?'hidden':''}">
-        <b>${combo.name}</b> - ₹${combo.price}
-        <br>
-        ${combo.items.map(id=>{
-          const item = menu.find(i=>i.id===id);
-          return item ? item.name : "";
-        }).join(", ")}
-        <br>
-        <button onclick="toggleCombo(${combo.id})">
-          ${combo.active?"Disable":"Enable"}
-        </button>
-        <button onclick="deleteCombo(${combo.id})">Delete</button>
-      </div>
-    `;
-  });
+function loadCombos(){
+  db.collection("combos")
+    .where("branchId","==",currentBranch)
+    .onSnapshot(snapshot=>{
+      comboList.innerHTML="";
+      snapshot.forEach(doc=>{
+        const combo=doc.data();
+        comboList.innerHTML+=`
+          <div>
+            ${combo.name} - ₹${combo.price}
+          </div>
+        `;
+      });
+    });
 }
 
-function toggleCombo(id){
-  const combo = combos.find(c=>c.id===id);
-  combo.active = !combo.active;
-  saveAll();
-  renderCombos();
+/* ORDERS */
+
+function loadOrders(){
+  db.collection("orders")
+    .where("branchId","==",currentBranch)
+    .orderBy("createdAt","desc")
+    .onSnapshot(snapshot=>{
+      orderList.innerHTML="";
+      snapshot.forEach(doc=>{
+        const order=doc.data();
+        orderList.innerHTML+=`
+          <div style="border:1px solid #ccc;padding:10px;margin:10px 0;">
+            <b>Order ID:</b> ${doc.id}<br>
+            <b>Name:</b> ${order.customerName}<br>
+            <b>Total:</b> ₹${order.total}<br>
+            <b>Status:</b> ${order.status}<br>
+            <button onclick="updateStatus('${doc.id}','Preparing')">Preparing</button>
+            <button onclick="updateStatus('${doc.id}','Completed')">Completed</button>
+          </div>
+        `;
+      });
+    });
 }
 
-function deleteCombo(id){
-  combos = combos.filter(c=>c.id!==id);
-  saveAll();
-  renderCombos();
+function updateStatus(id,status){
+  db.collection("orders").doc(id).update({status});
 }
-
-/* INIT */
-
-siteTitle.value = siteSettings.title;
-renderCategories();
-renderMenu();
-renderComboItemSelection();
-renderCombos();
