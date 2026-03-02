@@ -3,41 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <title>Cafe Adda</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header class="navbar">
-  <div class="logo" id="siteTitleDisplay"></div>
-  <button class="cart-btn" onclick="toggleCart()">
-    🛒 <span id="cartCount">0</span>
-  </button>
-</header>
+<h1>Cafe Adda Menu</h1>
 
-<div class="main-content">
+<h2>🔥 Special Combos</h2>
+<div id="comboContainer"></div>
 
-  <h2>🔥 Special Combos</h2>
-  <div id="comboContainer"></div>
+<div id="menuContainer"></div>
 
-  <div id="menuContainer"></div>
+<h2>Cart</h2>
+<div id="cartItems"></div>
+<h3>Total: ₹<span id="cartTotal">0</span></h3>
 
-</div>
+<h3>Delivery Details</h3>
+<input id="customerName" placeholder="Name">
+<input id="customerPhone" placeholder="Phone">
+<textarea id="customerAddress" placeholder="Address"></textarea>
 
-<div id="cartPanel" class="cart-panel">
-  <h2>Your Cart</h2>
-  <div id="cartItems"></div>
-  <h3>Total: ₹<span id="cartTotal">0</span></h3>
+<button onclick="sendWhatsAppOrder()">Order via WhatsApp</button>
 
-  <hr>
-
-  <h3>Delivery Details</h3>
-  <input type="text" id="customerName" placeholder="Your Name">
-  <input type="tel" id="customerPhone" placeholder="Mobile Number">
-  <textarea id="customerAddress" placeholder="Delivery Address"></textarea>
-
-  <button onclick="sendWhatsAppOrder()">Place Order</button>
-</div>
-
+<script src="firebase-config.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>
