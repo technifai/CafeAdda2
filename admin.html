@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cafe Adda Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Admin Dashboard</h1>
+
+<h2>Website Settings</h2>
+<input id="siteTitle" placeholder="Website Title">
+<button onclick="updateTitle()">Update Title</button>
+
+<hr>
+
+<h2>Create Category</h2>
+<input id="categoryName" placeholder="Category Name">
+<button onclick="addCategory()">Add Category</button>
+<div id="categoryList"></div>
+
+<hr>
+
+<h2>Add / Edit Menu Item</h2>
+<input id="itemName" placeholder="Item Name">
+<input id="itemPrice" type="number" placeholder="Price">
+
+<select id="categorySelect"></select>
+
+<label>
+<input type="checkbox" id="itemBest"> Bestseller
+</label>
+
+<label>
+<input type="checkbox" id="itemActive" checked> Visible
+</label>
+
+<button onclick="saveItem()">Save Item</button>
+
+<h3>Menu Items</h3>
+<div id="menuList"></div>
+
+<hr>
+
+<h2>Create Combo Offer</h2>
+<input id="comboName" placeholder="Combo Name">
+<input id="comboPrice" type="number" placeholder="Combo Offer Price">
+
+<h4>Select Items for Combo</h4>
+<div id="comboItemsSelection"></div>
+
+<label>
+<input type="checkbox" id="comboActive" checked> Active
+</label>
+
+<button onclick="addCombo()">Save Combo</button>
+
+<h3>Available Combos</h3>
+<div id="comboList"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cafe Adda</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="logo" id="siteTitleDisplay"></div>
+  <button class="cart-btn" onclick="toggleCart()">
+    🛒 <span id="cartCount">0</span>
+  </button>
+</header>
+
+<div class="main-content">
+
+  <h2>🔥 Special Combos</h2>
+  <div id="comboContainer"></div>
+
+  <div id="menuContainer"></div>
+
+</div>
+
+<div id="cartPanel" class="cart-panel">
+  <h2>Your Cart</h2>
+  <div id="cartItems"></div>
+  <h3>Total: ₹<span id="cartTotal">0</span></h3>
+
+  <hr>
+
+  <h3>Delivery Details</h3>
+  <input type="text" id="customerName" placeholder="Your Name">
+  <input type="tel" id="customerPhone" placeholder="Mobile Number">
+  <textarea id="customerAddress" placeholder="Delivery Address"></textarea>
+
+  <button onclick="sendWhatsAppOrder()">Place Order</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

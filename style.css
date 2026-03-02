@@ -1,0 +1,151 @@
+/* ===== ANIMATED BACKGROUND ===== */
+
+body{
+  margin:0;
+  font-family:'Segoe UI', sans-serif;
+  background:linear-gradient(-45deg,#0f0f0f,#1c1c1c,#111,#1a1a1a);
+  background-size:400% 400%;
+  animation:gradientBG 15s ease infinite;
+  color:white;
+}
+
+@keyframes gradientBG{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+/* ===== NAVBAR ===== */
+
+.navbar{
+  position:sticky;
+  top:0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 20px;
+  backdrop-filter:blur(10px);
+  background:rgba(0,0,0,0.5);
+  border-bottom:1px solid rgba(255,255,255,0.1);
+  z-index:100;
+}
+
+.logo{
+  font-size:22px;
+  font-weight:700;
+  background:linear-gradient(45deg,#ff9800,#ffc107);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.cart-btn{
+  background:linear-gradient(45deg,#ff9800,#ff5722);
+  border:none;
+  padding:8px 14px;
+  border-radius:20px;
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+}
+
+/* ===== MAIN CONTENT ===== */
+
+.main-content{
+  padding:20px;
+}
+
+/* ===== CATEGORY HEADINGS ===== */
+
+h2{
+  margin-top:40px;
+  border-left:4px solid #ff9800;
+  padding-left:10px;
+}
+
+/* ===== MENU CARDS ===== */
+
+.card{
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(12px);
+  border-radius:18px;
+  padding:18px;
+  margin:15px 0;
+  transition:0.3s ease;
+  box-shadow:0 8px 30px rgba(0,0,0,0.4);
+}
+
+.card:hover{
+  transform:translateY(-6px);
+  box-shadow:0 15px 35px rgba(255,152,0,0.3);
+}
+
+.card h3{
+  margin:0;
+  font-size:18px;
+}
+
+.card p{
+  color:#ffc107;
+  font-weight:600;
+}
+
+button{
+  background:linear-gradient(45deg,#ff9800,#ff5722);
+  border:none;
+  padding:7px 14px;
+  border-radius:20px;
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  margin-top:8px;
+  transition:0.3s ease;
+}
+
+button:hover{
+  transform:scale(1.05);
+  box-shadow:0 5px 15px rgba(255,87,34,0.4);
+}
+
+/* ===== CART PANEL ===== */
+
+.cart-panel{
+  position:fixed;
+  bottom:-100%;
+  left:0;
+  width:100%;
+  height:85%;
+  background:#111;
+  border-radius:25px 25px 0 0;
+  padding:20px;
+  transition:0.4s ease;
+  overflow-y:auto;
+  box-shadow:0 -5px 25px rgba(0,0,0,0.5);
+}
+
+.cart-panel.active{
+  bottom:0;
+}
+
+input, textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:12px;
+  border:none;
+  background:rgba(255,255,255,0.08);
+  color:white;
+}
+
+#cartTotal{
+  color:#ffc107;
+  font-size:20px;
+  font-weight:bold;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media(max-width:768px){
+  .card{
+    padding:15px;
+  }
+}
